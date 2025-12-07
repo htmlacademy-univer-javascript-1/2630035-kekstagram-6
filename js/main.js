@@ -2,6 +2,7 @@ import {MESSAGES, DESCRIPTIONS, NAMES, DESCRIPTION_COUNT} from './data.js';
 import {getRandomNumber, getPhotoId, getUrl, getCommentId, getRandomItem} from './util.js';
 import { renderPictures } from './pictures.js';
 import { initFullscreen } from './fullscreen.js';
+import { initForm } from './form.js';
 
 const createComments = () => ({
   id: getCommentId(),
@@ -22,4 +23,5 @@ const createDescriptionPhoto = () => ({
 const descriptionsPhoto = Array.from({length: DESCRIPTION_COUNT}, createDescriptionPhoto);
 renderPictures(descriptionsPhoto);
 initFullscreen(descriptionsPhoto);
+initForm();
 console.log(descriptionsPhoto);
