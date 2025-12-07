@@ -1,8 +1,6 @@
-// pictures.js
 
 const pictureTemplate = document.querySelector('#picture').content.querySelector('.picture');
 
-// Функция создания DOM-элемента для фотографии
 const createPictureElement = ({ url, description, likes, comments }) => {
   const pictureElement = pictureTemplate.cloneNode(true);
 
@@ -16,12 +14,10 @@ const createPictureElement = ({ url, description, likes, comments }) => {
   return pictureElement;
 };
 
-// Функция отрисовки фотографий в блок .pictures
 const renderPictures = (pictures) => {
   const picturesContainer = document.querySelector('.pictures');
   const fragment = document.createDocumentFragment();
 
-  // Очищаем контейнер перед отрисовкой (если нужно)
   const existingPictures = picturesContainer.querySelectorAll('.picture');
   existingPictures.forEach(picture => picture.remove());
 

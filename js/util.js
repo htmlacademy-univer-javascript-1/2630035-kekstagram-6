@@ -1,4 +1,4 @@
-import './main.js';
+
 
 const getRandomNumber = (from, to) => {
   const randomNumber = Math.random() * (to - from + 1);
