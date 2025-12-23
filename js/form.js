@@ -1,5 +1,7 @@
-
 import { resetEditor } from './image-editor.js';
+import { sendData } from './api.js';
+import { showSuccessMessage, showErrorMessage } from './messages.js';
+import { isEscapeKey } from './util.js';
 
 const uploadForm = document.querySelector('#upload-select-image');
 const uploadFileInput = uploadForm.querySelector('#upload-file');
@@ -7,6 +9,9 @@ const uploadOverlay = uploadForm.querySelector('.img-upload__overlay');
 const uploadCancel = uploadForm.querySelector('#upload-cancel');
 const hashtagInput = uploadForm.querySelector('.text__hashtags');
 const commentInput = uploadForm.querySelector('.text__description');
+const uploadSubmitButton = uploadForm.querySelector('#upload-submit');
+const scaleControlValue = uploadForm.querySelector('.scale__control--value');
+const effectLevelValue = uploadForm.querySelector('.effect-level__value');
 const body = document.body;
 
 const pristine = new Pristine(uploadForm, {
@@ -16,11 +21,11 @@ const pristine = new Pristine(uploadForm, {
 }, true);
 
 const validateHashtags = (value) => {
-  if (value === '') {
+  if (value.trim() === '') {
     return true;
   }
 
-  const hashtags = value.toLowerCase().split(' ').filter(Boolean);
+  const hashtags = value.trim().split(/\s+/).filter(Boolean);
 
   if (hashtags.length > 5) {
     return false;
@@ -32,13 +37,11 @@ const validateHashtags = (value) => {
     if (!hashtagRegex.test(hashtag)) {
       return false;
     }
-
-    if (hashtag === '#') {
-      return false;
-    }
   }
 
-  const uniqueHashtags = new Set(hashtags);
+  const lowerCaseHashtags = hashtags.map((tag) => tag.toLowerCase());
+  const uniqueHashtags = new Set(lowerCaseHashtags);
+
   if (uniqueHashtags.size !== hashtags.length) {
     return false;
   }
@@ -50,65 +53,138 @@ const validateComment = (value) => {
   return value.length <= 140;
 };
 
+const getHashtagErrorMessage = (value) => {
+  if (value.trim() === '') {
+    return '';
+  }
+
+  const hashtags = value.trim().split(/\s+/).filter(Boolean);
+
+  if (hashtags.length > 5) {
+    return 'Нельзя указать больше пяти хэш-тегов';
+  }
+
+  const hashtagRegex = /^#[a-zа-яё0-9]{1,19}$/i;
+
+  for (const hashtag of hashtags) {
+    if (!hashtagRegex.test(hashtag)) {
+      return 'Хэш-тег должен начинаться с # и содержать только буквы и цифры (1-19 символов)';
+    }
+  }
+
+  const lowerCaseHashtags = hashtags.map((tag) => tag.toLowerCase());
+  const uniqueHashtags = new Set(lowerCaseHashtags);
+
+  if (uniqueHashtags.size !== hashtags.length) {
+    return 'Хэш-теги не должны повторяться';
+  }
+
+  return '';
+};
+
 pristine.addValidator(
   hashtagInput,
   validateHashtags,
-  'Некорректные хэш-теги. Хэш-тег должен начинаться с #, содержать только буквы и цифры, не повторяться, максимум 5 тегов'
+  getHashtagErrorMessage
 );
 
 pristine.addValidator(
   commentInput,
   validateComment,
-  'Комментарий не должен превышать 140 символов'
+  'Длина комментария не может составлять больше 140 символов'
 );
+
+const blockSubmitButton = () => {
+  uploadSubmitButton.disabled = true;
+  uploadSubmitButton.textContent = 'Отправляю...';
+};
+
+const unblockSubmitButton = () => {
+  uploadSubmitButton.disabled = false;
+  uploadSubmitButton.textContent = 'Опубликовать';
+};
+
+const resetForm = () => {
+  uploadForm.reset();
+  uploadFileInput.value = '';
+
+  scaleControlValue.value = '100%';
+
+  const noneEffect = document.querySelector('#effect-none');
+  if (noneEffect) {
+    noneEffect.checked = true;
+  }
+  effectLevelValue.value = '';
+
+  pristine.reset();
+
+  resetEditor();
+};
 
 const openUploadForm = () => {
   uploadOverlay.classList.remove('hidden');
   body.classList.add('modal-open');
 
   document.addEventListener('keydown', onDocumentKeydown);
-  uploadCancel.addEventListener('click', closeUploadForm);
-  uploadForm.addEventListener('submit', onFormSubmit);
+  uploadCancel.addEventListener('click', onCancelClick);
 
-  hashtagInput.addEventListener('keydown', stopPropagation);
-  commentInput.addEventListener('keydown', stopPropagation);
+  hashtagInput.addEventListener('keydown', onInputKeydown);
+  commentInput.addEventListener('keydown', onInputKeydown);
 };
 
 const closeUploadForm = () => {
   uploadOverlay.classList.add('hidden');
   body.classList.remove('modal-open');
 
-  uploadForm.reset();
-  uploadFileInput.value = '';
-
-  resetEditor();
-
-  pristine.reset();
+  resetForm();
 
   document.removeEventListener('keydown', onDocumentKeydown);
-  uploadCancel.removeEventListener('click', closeUploadForm);
-  uploadForm.removeEventListener('submit', onFormSubmit);
-  hashtagInput.removeEventListener('keydown', stopPropagation);
-  commentInput.removeEventListener('keydown', stopPropagation);
+  uploadCancel.removeEventListener('click', onCancelClick);
+  hashtagInput.removeEventListener('keydown', onInputKeydown);
+  commentInput.removeEventListener('keydown', onInputKeydown);
 };
 
-const onFormSubmit = (evt) => {
+const onFormSubmit = async (evt) => {
+  evt.preventDefault();
+
   const isValid = pristine.validate();
 
   if (!isValid) {
-    evt.preventDefault();
+    return;
+  }
+
+  blockSubmitButton();
+
+  try {
+    const formData = new FormData(uploadForm);
+    await sendData(formData);
+    showSuccessMessage();
+
+    closeUploadForm();
+
+  } catch (error) {
+    showErrorMessage(() => {
+      uploadOverlay.classList.remove('hidden');
+      body.classList.add('modal-open');
+    });
+  } finally {
+    unblockSubmitButton();
   }
 };
 
+const onCancelClick = () => {
+  closeUploadForm();
+};
+
 const onDocumentKeydown = (evt) => {
-  if (evt.key === 'Escape' && !hashtagInput.matches(':focus') && !commentInput.matches(':focus')) {
+  if (isEscapeKey(evt) && !hashtagInput.matches(':focus') && !commentInput.matches(':focus')) {
     evt.preventDefault();
     closeUploadForm();
   }
 };
 
-const stopPropagation = (evt) => {
-  if (evt.key === 'Escape') {
+const onInputKeydown = (evt) => {
+  if (isEscapeKey(evt)) {
     evt.stopPropagation();
   }
 };
@@ -117,6 +193,8 @@ const initForm = () => {
   uploadFileInput.addEventListener('change', () => {
     openUploadForm();
   });
+
+  uploadForm.addEventListener('submit', onFormSubmit);
 };
 
-export { initForm, closeUploadForm };
+export { initForm, closeUploadForm, resetForm };
