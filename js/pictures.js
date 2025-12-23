@@ -1,34 +1,38 @@
-
-
 const pictureTemplate = document.querySelector('#picture').content.querySelector('.picture');
 
-const createPictureElement = ({ url, description, likes, comments }) => {
+const createPictureElement = (photo) => {
   const pictureElement = pictureTemplate.cloneNode(true);
 
   const pictureImage = pictureElement.querySelector('.picture__img');
-  pictureImage.src = url;
-  pictureImage.alt = description;
+  pictureImage.src = photo.url;
+  pictureImage.alt = photo.description;
+  pictureImage.dataset.id = photo.id;
 
-  pictureElement.querySelector('.picture__likes').textContent = likes;
-  pictureElement.querySelector('.picture__comments').textContent = comments.length;
+  pictureElement.querySelector('.picture__comments').textContent = photo.comments.length;
+  pictureElement.querySelector('.picture__likes').textContent = photo.likes;
 
   return pictureElement;
 };
 
-const renderPictures = (pictures) => {
+const renderPictures = (photos) => {
   const picturesContainer = document.querySelector('.pictures');
-  const fragment = document.createDocumentFragment();
-
+  const pictureListFragment = document.createDocumentFragment();
 
   const existingPictures = picturesContainer.querySelectorAll('.picture');
-  existingPictures.forEach(picture => picture.remove());
+  existingPictures.forEach((picture) => picture.remove());
 
-  pictures.forEach(picture => {
-    const pictureElement = createPictureElement(picture);
-    fragment.appendChild(pictureElement);
+  photos.forEach((photo) => {
+    const pictureElement = createPictureElement(photo);
+    pictureListFragment.appendChild(pictureElement);
   });
 
-  picturesContainer.appendChild(fragment);
+  picturesContainer.appendChild(pictureListFragment);
 };
 
-export { renderPictures };
+const clearPictures = () => {
+  const picturesContainer = document.querySelector('.pictures');
+  const existingPictures = picturesContainer.querySelectorAll('.picture');
+  existingPictures.forEach((picture) => picture.remove());
+};
+
+export { renderPictures, clearPictures };

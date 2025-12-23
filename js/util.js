@@ -1,24 +1,12 @@
-import './main.js';
+const isEscapeKey = (evt) => evt.key === 'Escape';
 
-const getRandomNumber = (from, to) => {
-  const randomNumber = Math.random() * (to - from + 1);
-  return Math.floor(randomNumber);
-};
+const debounce = (callback, timeoutDelay = 500) => {
+  let timeoutId;
 
-const getUniqeId = () => {
-  let lastGeneratedId = 0;
-
-  return function () {
-    lastGeneratedId += 1;
-    return lastGeneratedId;
+  return (...rest) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => callback.apply(this, rest), timeoutDelay);
   };
 };
 
-const getPhotoId = getUniqeId();
-const getUrl = getUniqeId();
-const getCommentId = getUniqeId();
-
-
-const getRandomItem = (dataArray) => dataArray[getRandomNumber(0, dataArray.length - 1)];
-
-export {getRandomNumber, getUniqeId, getPhotoId, getUrl, getCommentId, getRandomItem};
+export { isEscapeKey, debounce };
