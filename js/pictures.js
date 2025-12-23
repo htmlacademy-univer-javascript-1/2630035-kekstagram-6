@@ -18,9 +18,6 @@ const renderPictures = (photos) => {
   const picturesContainer = document.querySelector('.pictures');
   const pictureListFragment = document.createDocumentFragment();
 
-  const existingPictures = picturesContainer.querySelectorAll('.picture');
-  existingPictures.forEach((picture) => picture.remove());
-
   photos.forEach((photo) => {
     const pictureElement = createPictureElement(photo);
     pictureListFragment.appendChild(pictureElement);
@@ -32,6 +29,7 @@ const renderPictures = (photos) => {
 const clearPictures = () => {
   const picturesContainer = document.querySelector('.pictures');
   const existingPictures = picturesContainer.querySelectorAll('.picture');
+
   existingPictures.forEach((picture) => picture.remove());
 };
 

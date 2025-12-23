@@ -10,10 +10,12 @@ const socialCaption = bigPictureElement.querySelector('.social__caption');
 const socialCommentCount = bigPictureElement.querySelector('.social__comment-count');
 const commentsLoader = bigPictureElement.querySelector('.comments-loader');
 const pictureCancelButton = bigPictureElement.querySelector('.big-picture__cancel');
+const commentsCountElement = bigPictureElement.querySelector('.comments-count');
 const body = document.body;
 
 let currentComments = [];
 let commentsShown = 0;
+let currentPhotos = [];
 
 const createCommentElement = (comment) => {
   const commentElement = document.createElement('li');
@@ -52,6 +54,8 @@ const renderComments = () => {
 
   if (commentsShown >= currentComments.length) {
     commentsLoader.classList.add('hidden');
+  } else {
+    commentsLoader.classList.remove('hidden');
   }
 };
 
@@ -59,11 +63,18 @@ const onCommentsLoaderClick = () => {
   renderComments();
 };
 
-const openBigPicture = (photo) => {
+const openBigPicture = (photoId) => {
+  const photo = currentPhotos.find((item) => item.id === photoId);
+
+  if (!photo) {
+    return;
+  }
+
   bigPictureImage.src = photo.url;
   bigPictureImage.alt = photo.description;
   likesCountElement.textContent = photo.likes;
   socialCaption.textContent = photo.description;
+  commentsCountElement.textContent = photo.comments.length;
 
   socialComments.innerHTML = '';
   commentsShown = 0;
@@ -71,12 +82,6 @@ const openBigPicture = (photo) => {
   currentComments = photo.comments || [];
 
   renderComments();
-
-  if (currentComments.length > COMMENTS_PER_PORTION) {
-    commentsLoader.classList.remove('hidden');
-  } else {
-    commentsLoader.classList.add('hidden');
-  }
 
   bigPictureElement.classList.remove('hidden');
   body.classList.add('modal-open');
@@ -106,22 +111,26 @@ const onDocumentKeydown = (evt) => {
 };
 
 const initFullscreen = (photos) => {
+  currentPhotos = photos;
+
   const picturesContainer = document.querySelector('.pictures');
 
-  picturesContainer.addEventListener('click', (evt) => {
+  const onPictureClick = (evt) => {
     const pictureElement = evt.target.closest('.picture');
 
     if (pictureElement) {
       evt.preventDefault();
       const pictureImage = pictureElement.querySelector('.picture__img');
       const photoId = parseInt(pictureImage.dataset.id, 10);
-      const photo = photos.find((item) => item.id === photoId);
 
-      if (photo) {
-        openBigPicture(photo);
+      if (photoId) {
+        openBigPicture(photoId);
       }
     }
-  });
+  };
+
+  picturesContainer.removeEventListener('click', onPictureClick);
+  picturesContainer.addEventListener('click', onPictureClick);
 };
 
 export { initFullscreen, closeBigPicture };
