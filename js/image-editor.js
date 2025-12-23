@@ -58,7 +58,6 @@ const EFFECTS = {
 };
 
 let currentEffect = 'none';
-let scaleSlider = null;
 
 const updateScale = (value) => {
   const percentage = `${value}%`;
@@ -166,6 +165,15 @@ const resetEditor = () => {
   }
 };
 
+const updateEffectsPreview = () => {
+  const effectsPreviews = document.querySelectorAll('.effects__preview');
+  const currentImageSrc = imagePreview.src;
+
+  effectsPreviews.forEach((preview) => {
+    preview.style.backgroundImage = `url(${currentImageSrc})`;
+  });
+};
+
 const initImageEditor = () => {
   const scaleSmallerButton = uploadForm.querySelector('.scale__control--smaller');
   const scaleBiggerButton = uploadForm.querySelector('.scale__control--bigger');
@@ -182,6 +190,16 @@ const initImageEditor = () => {
   if (noneEffect) {
     noneEffect.checked = true;
   }
+
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'src') {
+        updateEffectsPreview();
+      }
+    });
+  });
+
+  observer.observe(imagePreview, { attributes: true });
 };
 
-export { initImageEditor, resetEditor };
+export { initImageEditor, resetEditor, updateEffectsPreview };
