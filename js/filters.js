@@ -56,6 +56,12 @@ class Filters {
     this.debouncedApplyFilter();
   }
 
+  setPhotos(newPhotos) {
+    this.photos = newPhotos;
+    this.applyFilter();
+  }
+
+
   updateActiveFilterButton(activeButtonId) {
     this.filterButtons.forEach((button) => {
       button.classList.remove('img-filters__button--active');
