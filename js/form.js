@@ -12,11 +12,8 @@ const commentInput = uploadForm.querySelector('.text__description');
 const uploadSubmitButton = uploadForm.querySelector('#upload-submit');
 const uploadPreview = uploadForm.querySelector('.img-upload__preview img');
 const effectsPreview = uploadForm.querySelectorAll('.effects__preview');
-<<<<<<< HEAD
 const scaleControl = uploadForm.querySelector('.scale__control--value');
 const effectLevel = uploadForm.querySelector('.effect-level__value');
-=======
->>>>>>> 57db2bb97a0a4aa55c466cfe9fef661de65506c3
 const body = document.body;
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -226,10 +223,7 @@ const onFileInputChange = () => {
   if (file) {
     const success = loadAndShowPhoto(file);
     if (success) {
-<<<<<<< HEAD
       resetEditor();
-=======
->>>>>>> 57db2bb97a0a4aa55c466cfe9fef661de65506c3
       openUploadForm();
     } else {
       uploadFileInput.value = '';
@@ -252,11 +246,6 @@ const resetForm = () => {
   uploadFileInput.value = '';
   uploadPreview.src = 'img/upload-default-image.jpg';
 
-<<<<<<< HEAD
-=======
-  uploadPreview.src = 'img/upload-default-image.jpg';
-
->>>>>>> 57db2bb97a0a4aa55c466cfe9fef661de65506c3
   effectsPreview.forEach((preview) => {
     preview.style.backgroundImage = '';
   });
@@ -328,7 +317,6 @@ const onFormSubmit = async (evt) => {
   blockSubmitButton();
 
   try {
-<<<<<<< HEAD
     const processedImage = await createProcessedImage(uploadPreview);
 
     const formData = new FormData();
@@ -371,12 +359,6 @@ const onFormSubmit = async (evt) => {
 
     addNewPhotoToGallery(newPhoto);
 
-=======
-    const formData = new FormData(evt.target);
-
-    await sendData(formData);
-
->>>>>>> 57db2bb97a0a4aa55c466cfe9fef661de65506c3
     showSuccessMessage();
 
     closeUploadForm();
@@ -411,12 +393,8 @@ const onInputKeydown = (evt) => {
   }
 };
 
-<<<<<<< HEAD
 const initForm = (callback) => {
   updatePhotosCallback = callback;
-=======
-const initForm = () => {
->>>>>>> 57db2bb97a0a4aa55c466cfe9fef661de65506c3
   uploadFileInput.addEventListener('change', onFileInputChange);
 };
 
