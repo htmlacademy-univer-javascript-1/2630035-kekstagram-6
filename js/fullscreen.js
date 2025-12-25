@@ -63,6 +63,25 @@ const onCommentsLoaderClick = () => {
   renderComments();
 };
 
+const getEffectFilter = (effect, level) => {
+  if (!effect || effect === 'none' || !level) return 'none';
+
+  switch (effect) {
+    case 'chrome':
+      return `grayscale(${level})`;
+    case 'sepia':
+      return `sepia(${level})`;
+    case 'marvin':
+      return `invert(${level}%)`;
+    case 'phobos':
+      return `blur(${level}px)`;
+    case 'heat':
+      return `brightness(${level})`;
+    default:
+      return 'none';
+  }
+};
+
 const openBigPicture = (photoId) => {
   const photo = currentPhotos.find((item) => item.id === photoId);
 
@@ -72,6 +91,27 @@ const openBigPicture = (photoId) => {
 
   bigPictureImage.src = photo.url;
   bigPictureImage.alt = photo.description;
+
+  bigPictureImage.style.transform = '';
+  bigPictureImage.style.filter = '';
+  bigPictureImage.className = '';
+
+  if (photo.scale) {
+    const scaleValue = photo.scale / 100;
+    bigPictureImage.style.transform = `scale(${scaleValue})`;
+  }
+
+  if (photo.effect && photo.effect !== 'none') {
+    bigPictureImage.classList.add(`effects__preview--${photo.effect}`);
+
+    if (photo.effect_level) {
+      const filter = getEffectFilter(photo.effect, photo.effect_level);
+      if (filter !== 'none') {
+        bigPictureImage.style.filter = filter;
+      }
+    }
+  }
+
   likesCountElement.textContent = photo.likes;
   socialCaption.textContent = photo.description;
   commentsCountElement.textContent = photo.comments.length;
@@ -101,6 +141,10 @@ const closeBigPicture = () => {
 
   currentComments = [];
   commentsShown = 0;
+
+  bigPictureImage.style.transform = '';
+  bigPictureImage.style.filter = '';
+  bigPictureImage.className = '';
 };
 
 const onDocumentKeydown = (evt) => {

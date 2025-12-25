@@ -12,6 +12,8 @@ const commentInput = uploadForm.querySelector('.text__description');
 const uploadSubmitButton = uploadForm.querySelector('#upload-submit');
 const uploadPreview = uploadForm.querySelector('.img-upload__preview img');
 const effectsPreview = uploadForm.querySelectorAll('.effects__preview');
+const scaleControl = uploadForm.querySelector('.scale__control--value');
+const effectLevel = uploadForm.querySelector('.effect-level__value');
 const body = document.body;
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -21,6 +23,74 @@ const pristine = new Pristine(uploadForm, {
   errorTextParent: 'img-upload__field-wrapper',
   errorTextClass: 'img-upload__field-wrapper--error'
 }, true);
+
+const createProcessedImage = async (imageElement) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+
+    img.onload = () => {
+      try {
+        const computedStyle = window.getComputedStyle(imageElement);
+        const transform = computedStyle.transform;
+        const filter = computedStyle.filter;
+
+        let scaleValue = 1;
+        if (transform && transform !== 'none') {
+          const matrixMatch = transform.match(/matrix\(([^)]+)\)/);
+          if (matrixMatch) {
+            const values = matrixMatch[1].split(',').map(Number);
+            if (values.length >= 4) {
+              scaleValue = values[0];
+            }
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const newWidth = img.naturalWidth * scaleValue;
+        const newHeight = img.naturalHeight * scaleValue;
+
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+
+        if (filter && filter !== 'none') {
+          ctx.filter = filter;
+        }
+
+        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error('Не удалось создать изображение'));
+            return;
+          }
+
+          const originalFile = uploadFileInput.files[0];
+          const fileName = originalFile ? originalFile.name : 'image.jpg';
+          const file = new File([blob], fileName, { type: 'image/jpeg' });
+
+          const processedUrl = URL.createObjectURL(blob);
+          resolve({
+            url: processedUrl,
+            file: file,
+            scale: scaleValue * 100
+          });
+        }, 'image/jpeg', 0.95);
+
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    img.onerror = () => {
+      reject(new Error('Не удалось загрузить изображение'));
+    };
+
+    img.src = imageElement.src;
+  });
+};
 
 const validateHashtags = (value) => {
   if (value.trim() === '') {
@@ -153,6 +223,7 @@ const onFileInputChange = () => {
   if (file) {
     const success = loadAndShowPhoto(file);
     if (success) {
+      resetEditor();
       openUploadForm();
     } else {
       uploadFileInput.value = '';
@@ -173,7 +244,6 @@ const unblockSubmitButton = () => {
 const resetForm = () => {
   uploadForm.reset();
   uploadFileInput.value = '';
-
   uploadPreview.src = 'img/upload-default-image.jpg';
 
   effectsPreview.forEach((preview) => {
@@ -181,8 +251,15 @@ const resetForm = () => {
   });
 
   pristine.reset();
-
   resetEditor();
+};
+
+let updatePhotosCallback = null;
+
+const addNewPhotoToGallery = (photoData) => {
+  if (updatePhotosCallback && typeof updatePhotosCallback === 'function') {
+    updatePhotosCallback(photoData);
+  }
 };
 
 const openUploadForm = () => {
@@ -210,6 +287,19 @@ const closeUploadForm = () => {
   commentInput.removeEventListener('keydown', onInputKeydown);
 };
 
+const getCurrentEffect = () => {
+  const checkedEffect = uploadForm.querySelector('input[name="effect"]:checked');
+  return checkedEffect ? checkedEffect.value : 'none';
+};
+
+const getCurrentEffectLevel = () => {
+  return effectLevel.value || '';
+};
+
+const getCurrentScale = () => {
+  return scaleControl.value.replace('%', '');
+};
+
 const onFormSubmit = async (evt) => {
   evt.preventDefault();
 
@@ -227,15 +317,56 @@ const onFormSubmit = async (evt) => {
   blockSubmitButton();
 
   try {
-    const formData = new FormData(evt.target);
+    const processedImage = await createProcessedImage(uploadPreview);
+
+    const formData = new FormData();
+
+    formData.append('filename', processedImage.file);
+    formData.append('scale', processedImage.scale);
+    formData.append('effect', getCurrentEffect());
+
+    const currentEffect = getCurrentEffect();
+    if (currentEffect !== 'none') {
+      const effectLevelValue = getCurrentEffectLevel();
+      if (effectLevelValue) {
+        formData.append('effect_level', effectLevelValue);
+      }
+    }
+
+    const descriptionValue = commentInput.value.trim();
+    const hashtagsValue = hashtagInput.value.trim();
+
+    if (descriptionValue) {
+      formData.append('description', descriptionValue);
+    }
+
+    if (hashtagsValue) {
+      formData.append('hashtags', hashtagsValue);
+    }
 
     await sendData(formData);
+
+    const newPhoto = {
+      id: Date.now(),
+      url: processedImage.url,
+      description: descriptionValue || 'Новое фото',
+      likes: 0,
+      comments: [],
+      scale: processedImage.scale,
+      effect: getCurrentEffect(),
+      effect_level: getCurrentEffectLevel()
+    };
+
+    addNewPhotoToGallery(newPhoto);
 
     showSuccessMessage();
 
     closeUploadForm();
 
+    unblockSubmitButton();
+
   } catch (error) {
+    console.error('Ошибка при отправке формы:', error);
     showErrorMessage(() => {
       uploadOverlay.classList.remove('hidden');
       body.classList.add('modal-open');
@@ -243,6 +374,7 @@ const onFormSubmit = async (evt) => {
     });
   }
 };
+
 
 const onCancelClick = () => {
   closeUploadForm();
@@ -261,7 +393,8 @@ const onInputKeydown = (evt) => {
   }
 };
 
-const initForm = () => {
+const initForm = (callback) => {
+  updatePhotosCallback = callback;
   uploadFileInput.addEventListener('change', onFileInputChange);
 };
 
