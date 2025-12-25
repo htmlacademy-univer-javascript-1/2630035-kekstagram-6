@@ -65,4 +65,3 @@ const cleanup = () => {
 };
 
 export { photos, cleanup };
-
